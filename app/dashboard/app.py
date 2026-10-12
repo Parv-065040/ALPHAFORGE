@@ -16,6 +16,12 @@ from app.storage.db import Storage  # noqa: E402
 
 st.set_page_config(page_title="ALPHAFORGE", layout="wide")
 
+@st.cache_resource(show_spinner=False)
+def get_dashboard_storage(db_path: str) -> Storage:
+    """Reuse one SQLite connection across Streamlit reruns."""
+    return Storage(db_path)
+
+
 
 def show(state: data.ViewState) -> bool:
     if state.status == "empty":
@@ -30,7 +36,7 @@ def show(state: data.ViewState) -> bool:
 def main() -> None:
     s = load_settings()
     try:
-        db = Storage(s.app.db_path)
+        db = get_dashboard_storage(s.app.db_path)
     except Exception as e:
         st.error(f"Unavailable: database could not be opened ({type(e).__name__}: {e})")
         return
