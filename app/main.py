@@ -160,6 +160,56 @@ def cmd_paper_session(s: Settings, a) -> int:
         return 0
 
 
+
+def cmd_crewai_session(s: Settings, a) -> int:
+    """Repeated CrewAI scans; this command is strictly dry-run."""
+    from app.flow.crewai_flow import build_crewai_flow
+
+    if s.enable_paper_trading:
+        print(
+            "Refusing to start: set ENABLE_PAPER_TRADING=false "
+            "for the CrewAI dry-run session."
+        )
+        return 1
+
+    checks = run_preflight(s, online=True)
+    print(format_report(checks))
+    if any(c.status == "FAIL" for c in checks) or not paper_mode_confirmed(checks):
+        print("\\nRefusing to start: preflight failed or paper mode not confirmed.")
+        return 1
+
+    if not s.has_alpaca_keys():
+        print("Alpaca keys missing; cannot run live-market-data research.")
+        return 2
+
+    # Deliberately build without a broker/execution service.
+    db, flow, _ = _build(s, need_broker=False)
+    interval = s.app.scan_interval_minutes
+    print(
+        f"Starting CrewAI DRY-RUN session; interval={interval} minutes. "
+        "No broker execution service is configured. Ctrl+C stops the session."
+    )
+
+    try:
+        while True:
+            status = session_status(utcnow())
+            if status.is_open:
+                started = utcnow().isoformat()
+                print(f"\\n[{started}] Starting CrewAI cycle")
+                state = build_crewai_flow(flow, dry_run=True).kickoff()
+                _print_cycle(state)
+                print(f"[{utcnow().isoformat()}] CrewAI cycle completed")
+            else:
+                print(f"{utcnow().isoformat()} market closed; waiting")
+
+            if a.once:
+                return 0
+
+            time.sleep(interval * 60)
+    except KeyboardInterrupt:
+        print("\\nCrewAI dry-run session stopped by operator.")
+        return 0
+
 def cmd_smoke_order(s: Settings, a) -> int:
     if not (s.enable_paper_trading and a.i_understand):
         print("Requires ENABLE_PAPER_TRADING=true and --i-understand. Submits then cancels a 1-share PAPER limit order.")
@@ -186,6 +236,7 @@ def main(argv: list[str] | None = None) -> int:
     x = sub.add_parser("review"); x.set_defaults(fn=cmd_review)
     x = sub.add_parser("halt"); x.add_argument("--resume", action="store_true"); x.add_argument("--reason", default="operator"); x.set_defaults(fn=cmd_halt)
     x = sub.add_parser("paper-session"); x.add_argument("--confirm-paper", action="store_true"); x.add_argument("--once", action="store_true"); x.set_defaults(fn=cmd_paper_session)
+    x = sub.add_parser("crewai-session", help="repeated CrewAI dry-run cycles; never submits orders"); x.add_argument("--once", action="store_true", help="perform one market-session check/cycle and exit"); x.set_defaults(fn=cmd_crewai_session)
     x = sub.add_parser("smoke-order"); x.add_argument("--symbol", default="SPY"); x.add_argument("--i-understand", action="store_true"); x.set_defaults(fn=cmd_smoke_order)
     a = p.parse_args(argv)
     s = load_settings(a.config)
