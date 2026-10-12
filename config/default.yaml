@@ -1,0 +1,100 @@
+# ALPHAFORGE default configuration. All numbers are provisional hypotheses, not validated optima.
+app:
+  db_path: data/alphaforge.db
+  log_dir: logs
+  scan_interval_minutes: 15
+  starting_equity_target: 100000
+data:
+  feed: iex                    # iex = free feed; sip needs a paid Alpaca plan
+  daily_lookback_days: 420
+  max_quote_age_seconds: 120
+  max_bar_age_sessions: 3
+  news_lookback_hours: 48
+  http_timeout_seconds: 10
+  max_retries: 3
+  backoff_seconds: 1.0
+  benchmark_symbol: SPY
+universe:
+  symbols: [SPY, QQQ, IWM, DIA, XLK, XLF, XLE, XLV, XLY, XLI,
+            AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AMD, AVGO, JPM,
+            V, UNH, LLY, COST, NFLX, CRM, ADBE, XOM, HD, BAC]
+  correlation_groups:
+    mega_tech: [AAPL, MSFT, NVDA, AMZN, GOOGL, META, AVGO, AMD, CRM, ADBE, NFLX, TSLA, QQQ, XLK]
+    financials: [JPM, BAC, V, XLF]
+    broad_index: [SPY, IWM, DIA]
+    energy: [XOM, XLE]
+    healthcare: [UNH, LLY, XLV]
+session:
+  entry_blackout_open_minutes: 5
+  entry_blackout_close_minutes: 15
+  intraday_flatten_minutes_before_close: 10
+scoring:
+  weights: {trend_momentum: 0.30, relative_strength: 0.20, volume_breakout: 0.20, catalyst: 0.20, regime: 0.10}
+  min_score: 0.60
+strategies:
+  momentum:
+    enabled: true
+    breakout_lookback: 20
+    sma_fast: 20
+    sma_slow: 50
+    sma_trend: 100
+    min_volume_ratio: 1.3
+    atr_period: 14
+    stop_atr_multiple: 2.0
+    target_r_multiple: 3.0
+    max_chase_atr: 0.5
+    min_atr_pct: 0.01
+    max_atr_pct: 0.06
+    horizon: swing
+  catalyst:
+    enabled: true
+    min_decayed_sentiment: 0.35
+    min_materiality: 0.5
+    min_novelty: 0.5
+    min_price_move_pct: 0.01
+    min_volume_ratio: 1.5
+    stop_atr_multiple: 1.5
+    target_r_multiple: 2.0
+    horizon: intraday
+  relative_strength:
+    enabled: false
+    rs_lookback: 63
+    min_rs_long: 0.05
+    breakdown_lookback: 20
+    min_volume_ratio: 1.3
+    stop_atr_multiple: 2.0
+    target_r_multiple: 2.5
+    horizon: swing
+    allow_short_signals: false
+regime:
+  block_longs_in_risk_off: true
+  max_benchmark_atr_pct: 0.025
+risk:
+  risk_per_trade_pct: 0.005
+  higher_risk_approved: false   # 0.75% risk requires this to be true AND documented validation
+  max_position_pct: 0.15
+  max_gross_exposure_pct: 0.70
+  daily_loss_limit_pct: 0.02
+  drawdown_review_pct: 0.05
+  buying_power_buffer_pct: 0.05
+  min_avg_dollar_volume: 20000000
+  max_adv_participation: 0.01
+  min_reward_risk: 1.5
+  max_positions: 8
+  max_new_entries_per_day: 4
+  max_group_exposure_pct: 0.30
+  proposal_ttl_minutes: 30
+  approval_ttl_minutes: 5
+  limit_buffer_bps: 10
+  entry_order_max_age_minutes: 45
+  existing_positions_policy: hold_with_stops
+  envelopes: {intraday: 40000, swing: 25000, reserve: 25000, uncommitted: 10000}
+sentiment:
+  half_life_hours: 6.0
+  dedupe_similarity: 0.8
+  high_impact_materiality: 0.7
+  stale_after_hours: 24
+llm:
+  timeout_seconds: 60
+  max_retries: 1
+  temperature: 0.0

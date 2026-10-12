@@ -1,0 +1,17 @@
+# Core (required)
+pydantic>=2.6,<3
+pyyaml>=6.0
+python-dotenv>=1.0
+pandas>=2.1
+numpy>=1.26
+requests>=2.31
+exchange_calendars>=4.5
+tzdata>=2024.1
+plotly>=5.20
+streamlit>=1.50
+pytest>=8.0
+
+# Optional local models (the app runs without them; see README)
+# transformers>=4.40
+# torch>=2.2        # install the CUDA build from pytorch.org for the RTX GPU
+# crewai>=0.80      # optional CrewAI Flow wrapper (app/flow/crewai_flow.py)
