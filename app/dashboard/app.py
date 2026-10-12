@@ -40,6 +40,23 @@ def main() -> None:
     except Exception as e:
         st.error(f"Unavailable: database could not be opened ({type(e).__name__}: {e})")
         return
+
+    auto_refresh = st.sidebar.toggle(
+        "Auto-refresh every 15 seconds",
+        value=True,
+        key="dashboard_auto_refresh",
+    )
+    if st.sidebar.button("Refresh", key="dashboard_manual_refresh"):
+        st.rerun()
+
+    if auto_refresh:
+        render_dashboard_auto(s, db)
+    else:
+        render_dashboard_manual(s, db)
+
+
+
+def render_dashboard_content(s, db):
     b = data.banner(db, s)
     st.title("ALPHAFORGE - paper-trading control room")
     if b.get("origin") == "demo":
@@ -47,8 +64,6 @@ def main() -> None:
     st.caption(f"Paper order execution: {'ENABLED' if b['paper_orders_enabled'] else 'disabled'} | "
                f"Shorting: {'enabled' if b['shorting_enabled'] else 'disabled'} | "
                f"Operator halt: {'ACTIVE' if b['halted'] else 'off'} | DB: {s.app.db_path}")
-    if st.sidebar.button("Refresh"):
-        st.rerun()
     tabs = st.tabs(["Portfolio", "Strategy monitor", "Agent activity", "Sentiment Intelligence", "Operations", "Config"])
 
     with tabs[0]:
@@ -132,6 +147,16 @@ def main() -> None:
     with tabs[5]:
         st.caption("Credentials are never shown; only presence flags.")
         st.json(data.config_view(s).data)
+
+
+@st.fragment(run_every="15s")
+def render_dashboard_auto(s, db):
+    render_dashboard_content(s, db)
+
+
+@st.fragment
+def render_dashboard_manual(s, db):
+    render_dashboard_content(s, db)
 
 
 main()
